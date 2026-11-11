@@ -85,6 +85,30 @@ div[data-baseweb="select"] span,
 div[data-baseweb="select"] div { color: #e5e7eb !important; }
 div[data-baseweb="select"] svg { fill: #00f3ff !important; }
 [data-testid="stAlert"] p { color: #e5e7eb !important; }
+
+/* ---------- Avisos (success / error / info / warning) en tono oscuro ---------- */
+[data-testid="stAlert"],
+[data-testid="stAlert"] > div,
+[data-testid="stAlertContainer"] {
+    background-color: #111827 !important;
+    border-radius: 8px !important;
+}
+[data-testid="stAlertContentSuccess"], .stAlert:has([data-testid="stAlertContentSuccess"]) {
+    border-left: 4px solid #00ff9d !important;
+}
+[data-testid="stAlertContentError"], .stAlert:has([data-testid="stAlertContentError"]) {
+    border-left: 4px solid #ff3c5a !important;
+}
+[data-testid="stAlertContentInfo"], .stAlert:has([data-testid="stAlertContentInfo"]) {
+    border-left: 4px solid #00f3ff !important;
+}
+[data-testid="stAlertContentWarning"], .stAlert:has([data-testid="stAlertContentWarning"]) {
+    border-left: 4px solid #facc15 !important;
+}
+[data-testid="stAlert"] *, [data-testid="stAlertContainer"] * {
+    color: #e5e7eb !important;
+}
+[data-testid="stAlert"] strong, [data-testid="stAlert"] b { color: #ffffff !important; }
 [data-testid="stCaptionContainer"] { color: #94a3b8 !important; }
 
 .cyber-card {
@@ -1049,19 +1073,28 @@ M3_AUDIO_HIDDEN_HTML = """
 
 
 def render_m3_audio(path, loop=False, show_controls=True, key=None):
-    """Inserta un <audio> directamente en la página con st.markdown (sin iframe).
-    No necesita JavaScript propio, así que evita el conflicto de reconciliación
-    de React que ocurría al meterlo en un componente/iframe aparte."""
+    """Reproduce un audio del Módulo 3.
+    - Con controles (rondas y despedida): usa st.audio nativo con autoplay. Como cada
+      ronda tiene un archivo distinto, Streamlit genera una URL nueva y el navegador
+      recarga el audio en cada cambio de ronda.
+    - Sin controles (tono de llamada): <audio> oculto en st.markdown."""
     data, mime = audio_bytes_for_browser(path)
     if data is None:
         st.warning(f"No se pudo cargar el audio: `{path}`.")
         return
+
+    if show_controls:
+        try:
+            st.audio(data, format=mime, autoplay=True, loop=loop)
+        except TypeError:
+            # Versiones antiguas de Streamlit sin autoplay/loop
+            st.audio(data, format=mime)
+        return
+
     b64 = base64.b64encode(data).decode()
-    template = M3_AUDIO_HTML if show_controls else M3_AUDIO_HIDDEN_HTML
-    html = (template
-            .replace("__LOOP__", "loop" if loop else "")
-            .replace("__MIME__", mime)
-            .replace("__B64__", b64))
+    uid = key or uuid.uuid4().hex
+    html = (f'<audio id="{uid}" autoplay {"loop" if loop else ""} '
+            f'src="data:{mime};base64,{b64}" style="display:none;"></audio>')
     st.markdown(html, unsafe_allow_html=True)
 
 
