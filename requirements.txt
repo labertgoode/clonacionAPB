@@ -1,0 +1,8 @@
+streamlit>=1.39
+edge-tts
+gTTS
+requests
+numpy
+scipy
+plotly
+fpdf2
